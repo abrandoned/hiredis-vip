@@ -13,6 +13,11 @@ module FFIHIREDISVIP
                         :REDIS_REPLY_STATUS, 5,
                         :REDIS_REPLY_ERROR, 6
 
+  class Timeval < FFI::Struct
+    layout :tv_sec, :long,
+           :tv_usec, :long
+  end
+
   class RedisReply < ::FFI::Struct
     layout :type, ::FFIHIREDISVIP::RedisReplyType,
            :integer, :long_long,
@@ -28,11 +33,12 @@ module FFIHIREDISVIP
   attach_function :redisCommand, [:pointer, :string, :varargs], :pointer, :blocking => true
   attach_function :redisFree, [:pointer], :void, :blocking => true # :pointer => redisContext from redisConnect
 
-
   attach_function :redisClusterFree, [:pointer], :void, :blocking => true
   attach_function :redisClusterConnect, [:string, :int], :pointer, :blocking => true # string => addresses, :int => flags
+  attach_function :redisClusterConnectWithTimeout, [:string, Timeval.by_value, :int], :pointer, :blocking => true # string => addresses, :timeval => timeout, :int => flags
   attach_function :redisClusterConnectNonBlock, [:string, :int], :pointer, :blocking => true
   attach_function :redisClusterCommand, [:pointer, :string, :varargs], :pointer, :blocking => true
+  attach_function :redisClusterSetMaxRedirect, [:pointer, :int], :void, :blocking => true # :pointer => redisContext, :int => max redirect
 
   def self.bench
     require "benchmark"
@@ -66,6 +72,8 @@ module FFIHIREDISVIP
     FFIHIREDISVIP.freeReplyObject(reply_raw)
 
     get_reply_raw = FFIHIREDISVIP.redisCommand(connection, "GET bar")
+    reply = RedisReply.new(get_reply_raw)
+    puts reply[:str]
     FFIHIREDISVIP.freeReplyObject(get_reply_raw)
 
     FFIHIREDISVIP.redisFree(connection)

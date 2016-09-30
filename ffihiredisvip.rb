@@ -34,6 +34,31 @@ module FFIHIREDISVIP
   attach_function :redisClusterConnectNonBlock, [:string, :int], :pointer, :blocking => true
   attach_function :redisClusterCommand, [:pointer, :string, :varargs], :pointer, :blocking => true
 
+  def self.bench
+    require "benchmark"
+
+    connection = FFIHIREDISVIP.redisConnect("127.0.0.1", 6379)
+    n = (ARGV.shift || 20000).to_i
+
+    elapsed = Benchmark.realtime do
+      # n sets, n gets
+      n.times do |i|
+        key = "foo#{i}"
+        value = key * 10
+
+        reply_raw = FFIHIREDISVIP.redisCommand(connection, "SET %b %b", :string, key, :size_t, key.size, :string, value, :size_t, value.size)
+        FFIHIREDISVIP.freeReplyObject(reply_raw)
+
+        get_reply_raw = FFIHIREDISVIP.redisCommand(connection, "GET %b", :string, key, :size_t, key.size)
+        FFIHIREDISVIP.freeReplyObject(get_reply_raw)
+      end
+    end
+
+    puts '%.2f Kops' % (2 * n / 1000 / elapsed)
+  ensure
+    FFIHIREDISVIP.redisFree(connection)
+  end
+
   def self.test_set_get
     connection = FFIHIREDISVIP.redisConnect("127.0.0.1", 6379)
 

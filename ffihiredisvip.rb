@@ -13,6 +13,15 @@ module FFIHIREDISVIP
                         :REDIS_REPLY_STATUS, 5,
                         :REDIS_REPLY_ERROR, 6
 
+  RedisOkType = enum :REDIS_OK, 0,
+                     :REDIS_ERR, -1,
+                     :REDIS_ERR_IO, 1, # /* Error in read or write */
+                     :REDIS_ERR_OTHER, 2, # /* Everything else... */
+                     :REDIS_ERR_EOF, 3, # /* End of file */
+                     :REDIS_ERR_PROTOCOL, 4, # /* Protocol error */
+                     :REDIS_ERR_OOM, 5, # /* Out of memory */
+                     :REDIS_ERR_CLUSTER_TOO_MANY_REDIRECT, 6
+
   class Timeval < FFI::Struct
     layout :tv_sec, :long,
            :tv_usec, :long
@@ -30,7 +39,9 @@ module FFIHIREDISVIP
   attach_function :freeReplyObject, [:pointer], :void, :blocking => true
 
   attach_function :redisConnect, [:string, :int], :pointer, :blocking => true
-  attach_function :redisCommand, [:pointer, :string, :varargs], :pointer, :blocking => true
+  attach_function :redisReconnect, [:pointer], RedisOkType, :blocking => true # :pointer => redisContext
+  attach_function :redisEnableKeepAlive, [:pointer], RedisOkType, :blocking => true # :pointer => redisContext
+  attach_function :redisCommand, [:pointer, :string, :varargs], RedisReply.ptr, :blocking => true
   attach_function :redisFree, [:pointer], :void, :blocking => true # :pointer => redisContext from redisConnect
 
   attach_function :redisClusterFree, [:pointer], :void, :blocking => true
@@ -55,8 +66,11 @@ module FFIHIREDISVIP
         reply_raw = FFIHIREDISVIP.redisCommand(connection, "SET %b %b", :string, key, :size_t, key.size, :string, value, :size_t, value.size)
         FFIHIREDISVIP.freeReplyObject(reply_raw)
 
-        get_reply_raw = FFIHIREDISVIP.redisCommand(connection, "GET %b", :string, key, :size_t, key.size)
-        FFIHIREDISVIP.freeReplyObject(get_reply_raw)
+        reply = FFIHIREDISVIP.redisCommand(connection, "GET %b", :string, key, :size_t, key.size)
+        reply_str = reply[:str]
+        raise "probs" unless reply[:str] == value
+        FFIHIREDISVIP.freeReplyObject(reply)
+        reply_str
       end
     end
 

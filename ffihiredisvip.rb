@@ -44,12 +44,13 @@ module FFIHIREDISVIP
   attach_function :redisCommand, [:pointer, :string, :varargs], RedisReply.ptr, :blocking => true
   attach_function :redisFree, [:pointer], :void, :blocking => true # :pointer => redisContext from redisConnect
 
-  attach_function :redisClusterFree, [:pointer], :void, :blocking => true
+  attach_function :redisClusterFree, [:pointer], :void, :blocking => true # :pointer => redisClusterContext
   attach_function :redisClusterConnect, [:string, :int], :pointer, :blocking => true # string => addresses, :int => flags
   attach_function :redisClusterConnectWithTimeout, [:string, Timeval.by_value, :int], :pointer, :blocking => true # string => addresses, :timeval => timeout, :int => flags
   attach_function :redisClusterConnectNonBlock, [:string, :int], :pointer, :blocking => true
   attach_function :redisClusterCommand, [:pointer, :string, :varargs], :pointer, :blocking => true
   attach_function :redisClusterSetMaxRedirect, [:pointer, :int], :void, :blocking => true # :pointer => redisContext, :int => max redirect
+  attach_function :redisClusterReset, [:pointer], :void, :blocking => true # :pointer => redisClusterContext
 
   def self.bench
     require "benchmark"

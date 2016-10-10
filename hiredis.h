@@ -122,6 +122,8 @@ redisReader *redisReaderCreate(void);
 /* Function to free the reply objects hiredis returns by default. */
 void freeReplyObject(void *reply);
 
+redisReply* redisReplyElement(redisReply* reply, size_t element_number);
+
 /* Functions to format a command according to the protocol. */
 int redisvFormatCommand(char **target, const char *format, va_list ap);
 int redisFormatCommand(char **target, const char *format, ...);

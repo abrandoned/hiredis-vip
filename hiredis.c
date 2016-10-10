@@ -70,6 +70,14 @@ static redisReply *createReplyObject(int type) {
     return r;
 }
 
+redisReply* redisReplyElement(redisReply* reply, size_t element_number) {
+  if (reply->elements > element_number) {
+    return reply->element[element_number];
+  }
+
+  return NULL;
+}
+
 /* Free a reply object */
 void freeReplyObject(void *reply) {
     redisReply *r = reply;
